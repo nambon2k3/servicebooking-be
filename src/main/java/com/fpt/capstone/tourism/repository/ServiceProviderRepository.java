@@ -16,6 +16,11 @@ public interface ServiceProviderRepository extends JpaRepository<ServiceProvider
 
     ServiceProvider findByPhone(String phoneNumber);
 
+    @Query(value = """
+        SELECT sp FROM ServiceProvider sp WHERE sp.id IN (:ids)
+    """)
+    List<ServiceProvider> findServiceProvidersByIds(@Param("ids") List<Long> ids);
+
     Optional<ServiceProvider> findByName(String serviceProviderName);
 
     boolean existsByName(String serviceProviderName);

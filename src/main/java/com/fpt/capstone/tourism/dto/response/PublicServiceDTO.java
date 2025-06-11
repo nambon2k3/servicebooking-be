@@ -22,4 +22,7 @@ public class PublicServiceDTO {
     private Integer capacity; // Số khách tối đa trong phòng
     private Integer availableQuantity; // Số lượng phòng còn lại
     private String facilities; // Danh sách các dịch vụ trong phòng (bồn tắm, tủ lạnh, wifi)
+    private int quantity;
+    private LocalDateTime checkInDate;
+    private LocalDateTime checkOutDate;
 }

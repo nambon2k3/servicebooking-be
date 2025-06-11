@@ -3,13 +3,8 @@ package com.fpt.capstone.tourism.service.impl;
 import com.fpt.capstone.tourism.dto.common.GeneralResponse;
 import com.fpt.capstone.tourism.dto.common.WishlistDTO;
 import com.fpt.capstone.tourism.exception.common.BusinessException;
-import com.fpt.capstone.tourism.model.Tour;
-import com.fpt.capstone.tourism.model.User;
-import com.fpt.capstone.tourism.model.Wishlist;
-import com.fpt.capstone.tourism.repository.TourImageRepository;
-import com.fpt.capstone.tourism.repository.TourRepository;
-import com.fpt.capstone.tourism.repository.UserRepository;
-import com.fpt.capstone.tourism.repository.WishlistRepository;
+import com.fpt.capstone.tourism.model.*;
+import com.fpt.capstone.tourism.repository.*;
 import com.fpt.capstone.tourism.service.WishlistService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,10 +28,11 @@ public class WishlistServiceImpl implements WishlistService {
     private final TourRepository tourRepository;
     private final UserRepository userRepository;
 
+    private final ServiceProviderRepository serviceProviderRepository;
+
     @Override
     public GeneralResponse<?> getUserListWishlist() {
         try {
-            User user = null;
             Long userId = null;
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth != null && auth.getName() != null) {
@@ -44,23 +40,13 @@ public class WishlistServiceImpl implements WishlistService {
             }
 
             List<Object[]> rawWishlist = wishlistRepository.findWishlistByUserId(userId);
-            List<Long> tourIds = rawWishlist.stream()
+            List<Long> providerIds = rawWishlist.stream()
                     .map(row -> ((Number) row[1]).longValue())
                     .distinct()
                     .toList();
             // Map: tourId -> name
-            Map<Long, String> tourNameMap = tourRepository.findToursByIds(tourIds).stream()
-                    .collect(Collectors.toMap(
-                            row -> ((Number) row[0]).longValue(),
-                            row -> (String) row[1]
-                    ));
-            // Map: tourId -> List<image_url>
-            Map<Long, List<String>> tourImageMap = new HashMap<>();
-            for (Object[] row : tourImageRepository.findImagesByTourIds(tourIds)) {
-                Long tourId = ((Number) row[0]).longValue();
-                String imageUrl = (String) row[1];
-                tourImageMap.computeIfAbsent(tourId, k -> new ArrayList<>()).add(imageUrl);
-            }
+            List<ServiceProvider> providers = serviceProviderRepository.findServiceProvidersByIds(providerIds);
+
             List<WishlistDTO>resultDTOs =  rawWishlist.stream().map(row -> {
                 Long wishlistId = ((Number) row[0]).longValue();
                 Long itemId = ((Number) row[1]).longValue();
@@ -69,8 +55,18 @@ public class WishlistServiceImpl implements WishlistService {
                         .id(wishlistId)
                         .itemId(itemId)
                         .itemType(itemType)
-                        .tourName(tourNameMap.getOrDefault(itemId, ""))
-                        .tourImageUrl(tourImageMap.getOrDefault(itemId, List.of()).stream().findFirst().orElse(null)) // hoặc get list luôn nếu muốn
+                        .tourName(providers.stream()
+                                .filter(provider -> provider.getId().equals(itemId))
+                                .findFirst()
+                                .map(ServiceProvider::getName)
+                                .orElseThrow(() -> BusinessException.of("Không tìm thấy tên tour")))
+                        .tourImageUrl(
+                                providers.stream()
+                                        .filter(provider -> provider.getId().equals(itemId))
+                                        .findFirst()
+                                        .map(ServiceProvider::getImageUrl)
+                                        .orElseThrow(() -> BusinessException.of("Không tìm thấy ảnh tour"))
+                        ) // hoặc get list luôn nếu muốn
                         .build();
             }).toList();
             return new GeneralResponse<>(HttpStatus.OK.value(), "Lấy wishlist thành công", resultDTOs);
@@ -85,22 +81,27 @@ public class WishlistServiceImpl implements WishlistService {
             User user = getCurrentUser();
             Wishlist dbWishlist = wishlistRepository.findByItemIdAndUserId(user.getId(), itemId);
             if(dbWishlist != null){
-                throw BusinessException.of("Tour đã có trong danh sách yêu thích");
+                throw BusinessException.of("Item đã có trong danh sách yêu thích");
             }
+
+            ServiceProvider provider = serviceProviderRepository.findById(itemId).orElseThrow(
+                    () -> BusinessException.of("Không tìm thấy nhà cung cấp dịch vụ")
+            );
+
             Wishlist wishlist = Wishlist.builder()
                     .itemId(itemId)
-                    .itemType("Tour")
+                    .itemType(provider.getServiceCategories().stream()
+                            .map(ServiceCategory::getCategoryName)
+                            .collect(Collectors.joining(",")))
                     .user(user)
                     .build();
             wishlistRepository.save(wishlist);
-            Tour tour = tourRepository.findById(itemId).orElseThrow(
-                    () -> BusinessException.of("Tour not found")
-            );
+
             WishlistDTO wishlistDTO = WishlistDTO.builder()
                     .itemId(wishlist.getItemId())
                     .itemType(wishlist.getItemType())
-                    .tourName(Optional.ofNullable(tour.getName()).orElseThrow(null))
-                    .tourImageUrl(Optional.ofNullable(tour.getTourImages().get(0).getImageUrl()).orElseThrow(null))
+                    .tourName(provider.getName())
+                    .tourImageUrl(provider.getImageUrl())
                     .build();
             return new GeneralResponse<>(HttpStatus.OK.value(), "Lấy wishlist thành công", wishlistDTO);
         } catch (Exception ex) {
@@ -119,15 +120,15 @@ public class WishlistServiceImpl implements WishlistService {
                 throw BusinessException.of(NO_PERMISSION_TO_DELETE);
             }
             wishlistRepository.deleteById(wishlistId);
-            Tour tour = tourRepository.findById(wishlist.getItemId()).orElseThrow(
+            ServiceProvider provider = serviceProviderRepository.findById(wishlist.getItemId()).orElseThrow(
                     () -> BusinessException.of(TOUR_NOT_FOUND)
             );
             WishlistDTO wishlistDTO = WishlistDTO.builder()
                     .id(wishlist.getId())
                     .itemId(wishlist.getItemId())
                     .itemType(wishlist.getItemType())
-                    .tourName(Optional.ofNullable(tour.getName()).orElseThrow(null))
-                    .tourImageUrl(Optional.ofNullable(tour.getTourImages().get(0).getImageUrl()).orElseThrow(null))
+                    .tourName(Optional.ofNullable(provider.getName()).orElseThrow(null))
+                    .tourImageUrl(Optional.ofNullable(provider.getImageUrl()).orElseThrow(null))
                     .build();
             return new GeneralResponse<>(HttpStatus.OK.value(), DELETE_WISHLIST_SUCCESS, wishlistDTO);
         } catch (Exception ex) {

@@ -35,15 +35,6 @@ public class ServiceBookingDetail extends BaseEntity {
     @Column(name = "quantity", nullable = false)
     private int quantity;
 
-    @Column(name = "total_price", nullable = false)
-    private double price;
-
-    @Enumerated(EnumType.STRING)
-    private BookingServiceStatus status; // PENDING, CONFIRMED, CANCELED
-
-    @Column(name = "note")
-    private String note;
-
     @Column(name = "is_deleted")
     private Boolean deleted = false;
 

@@ -1,6 +1,8 @@
 package com.fpt.capstone.tourism.repository;
 
 import com.fpt.capstone.tourism.dto.response.PublicServiceDTO;
+import com.fpt.capstone.tourism.dto.response.service.ActivityResponseDTO;
+import com.fpt.capstone.tourism.dto.response.service.MealResponseDTO;
 import com.fpt.capstone.tourism.model.Service;
 import com.fpt.capstone.tourism.model.enums.TourBookingServiceStatus;
 import org.springframework.data.domain.Page;
@@ -30,13 +32,47 @@ public interface ServiceRepository extends JpaRepository<Service, Long> {
 
     @Query("""
         SELECT new com.fpt.capstone.tourism.dto.response.PublicServiceDTO (
-            s.id, s.name, s.sellingPrice, s.imageUrl, r.id, r.capacity, r.availableQuantity, r.facilities)
+            s.id, s.name, s.sellingPrice, s.imageUrl, r.id, r.capacity, r.availableQuantity, r.facilities, 0, null, null)
         FROM Service s
         JOIN Room r ON s.id = r.service.id
         WHERE s.serviceProvider.id = :providerId AND s.serviceCategory.categoryName = 'Hotel'
         AND s.deleted = FALSE 
      """)
     List<PublicServiceDTO> findRoomsByProviderId(@Param("providerId") Long id);
+
+
+    @Query("""
+        SELECT new com.fpt.capstone.tourism.dto.response.PublicServiceDTO (
+            s.id, s.name, s.sellingPrice, s.imageUrl, r.id, r.capacity, r.availableQuantity, r.facilities, sd.quantity, sd.checkInDate, sd.checkOutDate)
+        FROM Service s
+        JOIN Room r ON s.id = r.service.id
+        JOIN ServiceBookingDetail sd ON s.id = sd.service.id
+        JOIN ServiceBooking sb ON sd.bookingService.id = sb.id
+        WHERE sb.bookingCode = :bookingCode AND s.serviceCategory.id = 1
+     """)
+    List<PublicServiceDTO> findRoomsInBooking(@Param("bookingCode") String bookingCode);
+
+    @Query("""
+        SELECT new com.fpt.capstone.tourism.dto.response.service.MealResponseDTO (
+            s.id, s.name, s.sellingPrice, s.imageUrl, m.type, m.mealDetail, sd.quantity, sd.checkInDate, sd.checkOutDate)
+        FROM Service s
+        JOIN Meal m ON s.id = m.service.id
+        JOIN ServiceBookingDetail sd ON s.id = sd.service.id
+        JOIN ServiceBooking sb ON sd.bookingService.id = sb.id
+        WHERE sb.bookingCode = :bookingCode AND s.serviceCategory.id = 2
+     """)
+    List<MealResponseDTO> findMealsInBooking(@Param("bookingCode") String bookingCode);
+
+    @Query("""
+        SELECT new com.fpt.capstone.tourism.dto.response.service.ActivityResponseDTO (
+            s.id, s.name, s.sellingPrice, s.imageUrl, sd.quantity, sd.checkInDate, sd.checkOutDate)
+        FROM Service s
+        JOIN ServiceBookingDetail sd ON s.id = sd.service.id
+        JOIN ServiceBooking sb ON sd.bookingService.id = sb.id
+        WHERE sb.bookingCode = :bookingCode AND s.serviceCategory.id = 4
+     """)
+    List<ActivityResponseDTO> findActivitiesInBooking(@Param("bookingCode") String bookingCode);
+
 
     @Query("""
         SELECT s FROM Service s

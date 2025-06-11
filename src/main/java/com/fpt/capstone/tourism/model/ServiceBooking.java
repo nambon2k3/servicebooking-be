@@ -17,24 +17,23 @@ public class ServiceBooking extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "service_id", nullable = false)
-    private Service service;
+    @Column(name = "booking_code", unique = true)
+    private String bookingCode;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user; // Nếu đã có entity User
 
-    @Column(name = "total_price", nullable = false)
+    @Column(name = "total_price")
     private double totalPrice;
 
     @Enumerated(EnumType.STRING)
     private BookingStatus status; // PENDING, CONFIRMED, CANCELED
 
-    @Column(name = "note")
-    private String note;
-
     @Column(name = "is_deleted")
     private Boolean deleted = false;
+
+    @Column(name = "payment_url", columnDefinition = "text")
+    private String paymentUrl;
 
 }
