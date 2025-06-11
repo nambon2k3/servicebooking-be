@@ -10,9 +10,14 @@ import java.util.Map;
 @AllArgsConstructor
 public class ActivityListDTO {
     private Long id;
-    private Integer dayNumber;
-    private String locationName;
+    private Double sellingPrice;
+    private String imageUrl;
     private String activityName;
     private String categoryName;
-    private Double pricePerPerson;
+    private String address;
+    private String providerName;
+    private String providerEmail;
+    private String providerPhone;
+    private String providerWebsite;
+    private String locationName;
 }

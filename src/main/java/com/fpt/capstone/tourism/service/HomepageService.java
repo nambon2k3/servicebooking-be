@@ -31,4 +31,5 @@ public interface HomepageService {
 
     GeneralResponse<?> getListLocation();
 
+    GeneralResponse<?> viewAllActivity(int page, int size, String keyword, Double budgetFrom, Double budgetTo);
 }
