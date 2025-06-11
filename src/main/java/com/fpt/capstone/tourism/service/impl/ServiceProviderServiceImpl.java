@@ -359,7 +359,7 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
     public GeneralResponse<PagingDTO<List<PublicServiceProviderDTO>>> getAllHotel(int page, int size, String keyword, Integer star) {
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-            Specification<ServiceProvider> spec = buildSearchSpecification(keyword, "Hotel", star);
+            Specification<ServiceProvider> spec = buildSearchSpecification(keyword, "Hotel", star, null, null);
 
             Page<ServiceProvider> serviceProviderPage = serviceProviderRepository.findAll(spec, pageable);
 
@@ -398,7 +398,7 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
     public GeneralResponse<PagingDTO<List<PublicServiceProviderDTO>>> getAllRestaurant(int page, int size, String keyword, Integer star) {
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-            Specification<ServiceProvider> spec = buildSearchSpecification(keyword, "Restaurant", star);
+            Specification<ServiceProvider> spec = buildSearchSpecification(keyword, "Restaurant", star, null, null);
 
             Page<ServiceProvider> serviceProviderPage = serviceProviderRepository.findAll(spec, pageable);
 
@@ -438,7 +438,7 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
     public GeneralResponse<PagingDTO<List<ServiceProviderDTO>>> getAllRestaurant(int page, int size, String keyword) {
         try {
             Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-            Specification<ServiceProvider> spec = buildSearchSpecification(keyword, "Restaurant", 1);
+            Specification<ServiceProvider> spec = buildSearchSpecification(keyword, "Restaurant", 1, null, null);
 
             Page<ServiceProvider> serviceProviderPage = serviceProviderRepository.findAll(spec, pageable);
             List<ServiceProviderDTO> serviceProviderDTOS = serviceProviderPage.getContent().stream()
@@ -463,7 +463,7 @@ public class ServiceProviderServiceImpl implements ServiceProviderService {
     }
 
 
-    private Specification<ServiceProvider> buildSearchSpecification(String keyword, String categoryName, Integer star) {
+    private Specification<ServiceProvider> buildSearchSpecification(String keyword, String categoryName, Integer star, Double budgetFrom, Double budgetTo) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 

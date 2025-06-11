@@ -155,7 +155,7 @@ public class ServiceServiceImpl implements ServiceService {
                         .orElseThrow(() -> BusinessException.of(HttpStatus.NOT_FOUND, TRANSPORT_NOT_FOUND));
                 // Add transport details to the map
                 serviceDetails.put("transportDetails", transportMapper.toDTO(transport));
-            }else if (ACTIVITY.equalsIgnoreCase(categoryName) || TICKET.equalsIgnoreCase(categoryName)) {
+            } else if (ACTIVITY.equalsIgnoreCase(categoryName) || TICKET.equalsIgnoreCase(categoryName)) {
             }
             return GeneralResponse.of(serviceDetails, SERVICE_DETAILS_RETRIEVED);
         } catch (BusinessException e) {
@@ -208,8 +208,8 @@ public class ServiceServiceImpl implements ServiceService {
         };
     }
 
-    private GeneralResponse<PagingDTO<List<ServiceBaseDTO>>> buildPagedResponse(Page<Service> servicePage, List<ServiceBaseDTO> serviceDTOs) {
-        PagingDTO<List<ServiceBaseDTO>> pagingDTO = PagingDTO.<List<ServiceBaseDTO>>builder()
+    private <T>GeneralResponse<PagingDTO<List<T>>> buildPagedResponse(Page<Service> servicePage, List<T> serviceDTOs) {
+        PagingDTO<List<T>> pagingDTO = PagingDTO.<List<T>>builder()
                 .page(servicePage.getNumber())
                 .size(servicePage.getSize())
                 .total(servicePage.getTotalElements())
@@ -273,8 +273,8 @@ public class ServiceServiceImpl implements ServiceService {
                 transport.setCreatedAt(LocalDateTime.now());
                 transportRepository.save(transport);
             } else if (ACTIVITY.equalsIgnoreCase(categoryName)) {
-            }else if(TICKET.equalsIgnoreCase(categoryName)){}
-            else {
+            } else if (TICKET.equalsIgnoreCase(categoryName)) {
+            } else {
                 throw BusinessException.of(HttpStatus.BAD_REQUEST, "Danh mục không được cung cấp");
             }
             ServiceResponseDTO responseDTO = createFullResponseDTO(savedService, categoryName);
@@ -372,8 +372,8 @@ public class ServiceServiceImpl implements ServiceService {
                 transport.setUpdatedAt(LocalDateTime.now());
                 transportRepository.save(transport);
             } else if (ACTIVITY.equalsIgnoreCase(categoryName)) {
-            }else if(TICKET.equalsIgnoreCase(categoryName)){}
-            else {
+            } else if (TICKET.equalsIgnoreCase(categoryName)) {
+            } else {
                 throw BusinessException.of(HttpStatus.BAD_REQUEST, "Danh mục không được cung cấp");
             }
             // Create a response DTO that includes all details
@@ -653,6 +653,93 @@ public class ServiceServiceImpl implements ServiceService {
         } catch (Exception ex) {
             throw BusinessException.of("Thất bại", ex);
         }
+    }
+
+    @Override
+    public GeneralResponse<?> getAllActivity(int page, int size, String keyword, Double budgetFrom, Double budgetTo) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+            Specification<Service> spec = buildSearchSpecification(keyword, "Activity", null, budgetFrom, budgetTo);
+
+            Page<Service> servicePage = serviceRepository.findAll(spec, pageable);
+
+            List<ActivityListDTO> serviceDTOS = servicePage.getContent().stream()
+                    .map(service ->
+                                 ActivityListDTO.builder()
+                                        .id(service.getId())
+                                        .sellingPrice(service.getSellingPrice())
+                                        .imageUrl(service.getImageUrl())
+                                        .activityName(service.getName())
+                                        .categoryName(service.getServiceCategory().getCategoryName())
+                                        .address(service.getServiceProvider().getAddress())
+                                        .providerName(service.getServiceProvider().getName())
+                                        .providerEmail(service.getServiceProvider().getEmail())
+                                        .providerPhone(service.getServiceProvider().getPhone())
+                                        .providerWebsite(service.getServiceProvider().getWebsite())
+                                        .locationName(service.getServiceProvider().getLocation().getName())
+                                        .build()
+
+
+                    )
+                    .collect(Collectors.toList());
+
+            return buildPagedResponse(servicePage, serviceDTOS);
+        } catch (Exception ex) {
+            throw BusinessException.of("Tải các hoat dong thất bại", ex);
+        }
+    }
+
+    private Specification<Service> buildSearchSpecification(
+            String keyword,
+            String serviceCategory,
+            Integer star,
+            Double budgetFrom,
+            Double budgetTo) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (serviceCategory != null) {
+                predicates.add(cb.equal(root.get("serviceCategory").get("categoryName"), serviceCategory));
+            }
+            // Search by name (ignoring accents and case)
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                Expression<String> normalizedKeyword = cb.function(
+                        "unaccent",
+                        String.class,
+                        cb.literal(keyword.toLowerCase())
+                );
+                Expression<String> normalizedName = cb.function(
+                        "unaccent",
+                        String.class,
+                        cb.lower(root.get("name"))
+                );
+
+                Predicate namePredicate = cb.like(
+                        normalizedName,
+                        cb.concat("%", cb.concat(normalizedKeyword, "%"))
+                );
+                predicates.add(namePredicate);
+            }
+
+            // Filter by deletion status
+            if (star != null) {
+                predicates.add(cb.equal(root.get("serviceProvider").get("star"), star));
+            }
+
+            if (budgetFrom != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("sellingPrice"), budgetFrom));
+            }
+
+            if (budgetTo != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("sellingPrice"), budgetTo));
+            }
+
+            // If no predicates were added, return a predicate that's always true
+            if (predicates.isEmpty()) {
+                return cb.isTrue(cb.literal(true));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
     }
 
     private Specification<TourBookingService> buildSearchSpecificationForService(String keyword, TourBookingServiceStatus status) {

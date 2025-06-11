@@ -30,5 +30,6 @@ public interface ServiceService {
 
     List<PublicActivityDTO> findRecommendedActivities(int numberActivity);
 
+    GeneralResponse<?> getAllActivity(int page, int size, String keyword, Double budgetFrom, Double budgetTo);
 }
 

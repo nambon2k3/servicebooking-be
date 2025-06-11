@@ -69,6 +69,16 @@ public class HomepageController {
         return ResponseEntity.ok(homepageService.viewAllRestaurant(page, size, keyword, star));
     }
 
+    @GetMapping("/list-activity")
+    public ResponseEntity<?> viewAllActivity(@RequestParam(defaultValue = "0") int page,
+                                               @RequestParam(defaultValue = "10") int size,
+                                               @RequestParam(required = false) String keyword,
+                                               @RequestParam(value = "budgetTo", required = false) Double budgetTo,
+                                               @RequestParam(value = "budgetFrom", required = false) Double budgetFrom
+    ) {
+        return ResponseEntity.ok(homepageService.viewAllActivity(page, size, keyword, budgetFrom, budgetTo));
+    }
+
 
 
 

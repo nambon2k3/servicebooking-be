@@ -250,6 +250,11 @@ public class HomepageServiceImpl implements HomepageService {
         }
     }
 
+    @Override
+    public GeneralResponse<?> viewAllActivity(int page, int size, String keyword, Double budgetFrom, Double budgetTo) {
+        return serviceService.getAllActivity(page, size, keyword, budgetFrom, budgetTo);
+    }
+
     public static String removeAccents(String text) {
         if (text == null) {
             return null;
