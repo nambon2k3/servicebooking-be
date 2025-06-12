@@ -30,4 +30,7 @@ public class Plan extends BaseEntity{
     @Column(name = "plan_status")
     @Enumerated(EnumType.STRING)
     private PlanStatus planStatus;
+
+    @Column
+    private boolean open;
 }

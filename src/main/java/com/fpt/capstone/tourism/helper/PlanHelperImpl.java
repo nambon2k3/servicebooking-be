@@ -62,6 +62,17 @@ public class PlanHelperImpl implements PlanHelper {
     }
 
     @Override
+    public Specification<Plan> buildSearchSpecification(boolean open) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Tham gia bảng user để truy cập user.id
+            predicates.add(cb.equal(root.get("open"), open));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    @Override
     public Specification<Plan> buildSearchSpecification(PlanStatus planStatus, String keyword) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();

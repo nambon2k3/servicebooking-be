@@ -2,6 +2,7 @@ package com.fpt.capstone.tourism.controller;
 
 import com.fpt.capstone.tourism.dto.common.*;
 import com.fpt.capstone.tourism.dto.response.*;
+import com.fpt.capstone.tourism.dto.response.provider.PublicRestaurantDetailDTO;
 import com.fpt.capstone.tourism.mapper.LocationMapper;
 import com.fpt.capstone.tourism.model.Location;
 import com.fpt.capstone.tourism.repository.LocationRepository;
@@ -95,6 +96,11 @@ public class HomepageController {
     @GetMapping("/hotel-detail/{serviceProviderId}")
     public ResponseEntity<GeneralResponse<PublicHotelDetailDTO>> viewHotelDetail(@PathVariable Long serviceProviderId) {
         return ResponseEntity.ok(homepageService.viewPublicHotelDetail(serviceProviderId));
+    }
+
+    @GetMapping("/restaurant-detail/{serviceProviderId}")
+    public ResponseEntity<GeneralResponse<PublicRestaurantDetailDTO>> viewRestaurantDetail(@PathVariable Long serviceProviderId) {
+        return ResponseEntity.ok(homepageService.viewPublicRestaurantDetail(serviceProviderId));
     }
 
     @GetMapping("/search")

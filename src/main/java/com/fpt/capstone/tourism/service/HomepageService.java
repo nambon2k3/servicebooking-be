@@ -2,6 +2,7 @@ package com.fpt.capstone.tourism.service;
 
 import com.fpt.capstone.tourism.dto.common.*;
 import com.fpt.capstone.tourism.dto.response.*;
+import com.fpt.capstone.tourism.dto.response.provider.PublicRestaurantDetailDTO;
 
 import java.time.LocalDate;
 import java.util.Date;
@@ -26,6 +27,7 @@ public interface HomepageService {
     GeneralResponse<PublicLocationDetailDTO> viewPublicLocationDetail(Long id);
 
     GeneralResponse<PublicHotelDetailDTO> viewPublicHotelDetail(Long serviceProviderId);
+    GeneralResponse<PublicRestaurantDetailDTO> viewPublicRestaurantDetail(Long serviceProviderId);
 
     GeneralResponse<?> search(String keyword);
 

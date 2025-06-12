@@ -6,10 +6,12 @@ import com.fpt.capstone.tourism.dto.response.UserBasicDTO;
 import com.fpt.capstone.tourism.model.Plan;
 import com.fpt.capstone.tourism.model.User;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface PlanMapper {
+    @Mapping(target = "user", source = "user")
     PlanDTO toPlanDto(Plan plan);
     PlanSaleResponseDTO toPlanSaleResponseDTO(Plan plan);
 

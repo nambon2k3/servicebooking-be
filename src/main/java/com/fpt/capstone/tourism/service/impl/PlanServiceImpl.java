@@ -8,21 +8,22 @@ import com.fpt.capstone.tourism.dto.common.ServiceProviderSimpleDTO;
 import com.fpt.capstone.tourism.dto.request.ActivityGenerateDTO;
 import com.fpt.capstone.tourism.dto.request.GeneratePlanRequestDTO;
 import com.fpt.capstone.tourism.dto.request.SavePlanRequestDTO;
+import com.fpt.capstone.tourism.dto.request.review.ReviewRequestDTO;
 import com.fpt.capstone.tourism.dto.response.PagingDTO;
 import com.fpt.capstone.tourism.dto.response.PlanSaleResponseDTO;
+import com.fpt.capstone.tourism.dto.response.review.ReviewResponseDTO;
 import com.fpt.capstone.tourism.exception.common.BusinessException;
 import com.fpt.capstone.tourism.helper.IHelper.PlanHelper;
 import com.fpt.capstone.tourism.mapper.BookingMapper;
 import com.fpt.capstone.tourism.mapper.LocationMapper;
 import com.fpt.capstone.tourism.mapper.PlanMapper;
+import com.fpt.capstone.tourism.mapper.ReviewMapper;
 import com.fpt.capstone.tourism.model.*;
 import com.fpt.capstone.tourism.model.enums.PlanStatus;
-import com.fpt.capstone.tourism.repository.LocationRepository;
-import com.fpt.capstone.tourism.repository.PlanRepository;
-import com.fpt.capstone.tourism.repository.ServiceProviderRepository;
-import com.fpt.capstone.tourism.repository.ServiceRepository;
+import com.fpt.capstone.tourism.repository.*;
 import com.fpt.capstone.tourism.service.GeminiApiService;
 import com.fpt.capstone.tourism.service.PlanService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -47,6 +48,7 @@ public class PlanServiceImpl implements PlanService {
     private final ServiceProviderRepository serviceProviderRepository;
     private final PlanRepository planRepository;
     private final ServiceRepository serviceRepository;
+    private final ReviewRepository reviewRepository;
 
     private final LocationMapper locationMapper;
     private final PlanMapper planMapper;
@@ -277,6 +279,23 @@ public class PlanServiceImpl implements PlanService {
     }
 
     @Override
+    public GeneralResponse<PagingDTO<List<PlanDTO>>> getPlans(int page, int size, String sortField, String sortDirection) {
+        try {
+            Sort.Direction direction = sortDirection.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortField));
+
+            // Build search specification
+            Specification<Plan> spec = planHelper.buildSearchSpecification(true);
+
+            Page<Plan> tourBookingPage = planRepository.findAll(spec, pageable);
+
+            return planHelper.buildPagedResponse(tourBookingPage);
+        } catch (Exception ex) {
+            throw BusinessException.of("Lấy dữ liệu thất bại", ex);
+        }
+    }
+
+    @Override
     public GeneralResponse<PagingDTO<List<PlanSaleResponseDTO>>> getPlans(int page, int size, String sortField, String sortDirection, PlanStatus planStatus, String keyword) {
         try {
             Sort.Direction direction = sortDirection.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
@@ -394,6 +413,36 @@ public class PlanServiceImpl implements PlanService {
             return GeneralResponse.of(savedPlan.getId());
         } catch (Exception ex) {
             throw BusinessException.of(GET_PROVIDER_BY_LOCATION_FAIL , ex);
+        }
+    }
+
+    private final ReviewMapper reviewMapper;
+
+    @Override
+    public GeneralResponse<?> getPlanReviews(Long planId) {
+        try {
+            List<Review> reviews = reviewRepository.findByPlanId(planId);
+            List<ReviewResponseDTO> dtos = reviews.stream().map(reviewMapper::toDto).toList();
+            return GeneralResponse.of(dtos);
+        } catch (Exception ex) {
+            throw BusinessException.of("Get Reviews failed" , ex);
+        }
+    }
+
+    @Override
+    @Transactional
+    public GeneralResponse<?> createReview(Long planId, ReviewRequestDTO dto) {
+        try {
+            Review review = Review.builder()
+                    .plan(Plan.builder().id(planId).build())
+                    .user(User.builder().id(dto.getUserId()).build())
+                    .content(dto.getContent())
+                    .build();
+
+            reviewRepository.save(review);
+            return GeneralResponse.of(dto);
+        } catch (Exception ex) {
+            throw BusinessException.of("Get Reviews failed" , ex);
         }
     }
 

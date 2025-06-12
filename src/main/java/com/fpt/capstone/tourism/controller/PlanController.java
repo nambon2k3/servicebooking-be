@@ -6,7 +6,9 @@ import com.fpt.capstone.tourism.dto.common.PlanDTO;
 import com.fpt.capstone.tourism.dto.request.ActivityGenerateDTO;
 import com.fpt.capstone.tourism.dto.request.GeneratePlanRequestDTO;
 import com.fpt.capstone.tourism.dto.request.SavePlanRequestDTO;
+import com.fpt.capstone.tourism.dto.request.review.ReviewRequestDTO;
 import com.fpt.capstone.tourism.dto.response.PagingDTO;
+import com.fpt.capstone.tourism.dto.response.review.ReviewResponseDTO;
 import com.fpt.capstone.tourism.service.BookingService;
 import com.fpt.capstone.tourism.service.PlanService;
 import lombok.RequiredArgsConstructor;
@@ -104,6 +106,27 @@ public class PlanController {
             @RequestParam(defaultValue = "id") String sortField,
             @RequestParam(defaultValue = "desc") String sortDirection) {
         return ResponseEntity.ok(planService.getPlans(page, size, sortField, sortDirection, userId));
+    }
+
+    @GetMapping("/forum")
+    public ResponseEntity<GeneralResponse<PagingDTO<List<PlanDTO>>>> getForumPlans(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "id") String sortField,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
+        return ResponseEntity.ok(planService.getPlans(page, size, sortField, sortDirection));
+    }
+
+
+    @GetMapping("/reviews/{planId}")
+    public ResponseEntity<?> getPlanReviews(@PathVariable(name = "planId") Long planId) {
+        return ResponseEntity.ok(planService.getPlanReviews(planId));
+    }
+
+
+    @PostMapping("/reviews/create/{planId}")
+    public ResponseEntity<?> getPlanReviews(@PathVariable(name = "planId") Long planId, @RequestBody ReviewRequestDTO dto) {
+        return ResponseEntity.ok(planService.createReview(planId, dto));
     }
 
 
