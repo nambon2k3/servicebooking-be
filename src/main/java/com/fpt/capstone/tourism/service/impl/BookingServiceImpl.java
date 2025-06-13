@@ -62,6 +62,7 @@ public class BookingServiceImpl implements BookingService {
     private final TourBookingServiceRepository tourBookingServiceRepository;
     private final TourDayRepository tourDayRepository;
     private final ServiceRepository serviceRepository;
+    private final ServiceBookingRepository serviceBookingRepository;
     private final ServiceCategoryRepository serviceCategoryRepository;
     private final TourDayServiceCategoryRepository tourDayServiceCategoryRepository;
     private final ServiceProviderRepository serviceProviderRepository;
@@ -897,81 +898,92 @@ public class BookingServiceImpl implements BookingService {
     @Override
 
     public GeneralResponse<PagingDTO<List<TourBookingHistoryDTO>>> viewListBookingHistory(int page, int size, String keyword, String paymentStatus, String orderDate) {
-        try {
-            Long currentId = getCurrentUserId();
-            Sort sort = "asc".equalsIgnoreCase(orderDate) ? Sort.by("createdAt").ascending() : Sort.by("createdAt").descending();
-            Pageable pageable = PageRequest.of(page, size, sort);
-            Specification<TourBooking> spec = buildSearchSpecification(keyword, paymentStatus)
-                    .and((root, query, criteriaBuilder) -> {
-                        Join<TourBooking, User> userJoin = root.join("user");
-                        return criteriaBuilder.equal(userJoin.get("id"), currentId);
-                    });
-
-            Page<TourBooking> tourPage = tourBookingRepository.findAll(spec, pageable);
-
-            // Map to DTO
-            List<TourBookingHistoryDTO> resultDTO = tourPage.getContent().stream()
-                    .map(booking -> {
-                                return TourBookingHistoryDTO.builder()
-                                        .bookingId(booking.getId())
-                                        .bookingDate(booking.getCreatedAt())
-                                        .bookingCode(booking.getBookingCode())
-                                        .tourId(booking.getTour().getId())
-                                        .tourName(booking.getTour().getName())
-                                        .tourImage(booking.getTour().getTourImages().get(0).getImageUrl())
-                                        .bookingStatus(booking.getStatus())
-                                        .bookingTotalAmount(booking.getTotalAmount())
-                                        .bookingExpiredAt(booking.getExpiredAt())
-                                        .build();
-                            }
-
-                    )
-                    .collect(Collectors.toList());
-
-            return buildPagedResponse(tourPage, resultDTO);
-        } catch (Exception ex) {
-            throw BusinessException.of(GET_BOOKING_HISTORY_LIST_FAIL, ex);
-        }
+//        try {
+//            Long currentId = getCurrentUserId();
+//            Sort sort = "asc".equalsIgnoreCase(orderDate) ? Sort.by("createdAt").ascending() : Sort.by("createdAt").descending();
+//            Pageable pageable = PageRequest.of(page, size, sort);
+//            Specification<TourBooking> spec = buildSearchSpecification(keyword, paymentStatus)
+//                    .and((root, query, criteriaBuilder) -> {
+//                        Join<TourBooking, User> userJoin = root.join("user");
+//                        return criteriaBuilder.equal(userJoin.get("id"), currentId);
+//                    });
+//
+//            Page<TourBooking> tourPage = tourBookingRepository.findAll(spec, pageable);
+//
+//            // Map to DTO
+//            List<TourBookingHistoryDTO> resultDTO = tourPage.getContent().stream()
+//                    .map(booking -> {
+//                                return TourBookingHistoryDTO.builder()
+//                                        .bookingId(booking.getId())
+//                                        .bookingDate(booking.getCreatedAt())
+//                                        .bookingCode(booking.getBookingCode())
+//                                        .tourId(booking.getTour().getId())
+//                                        .tourName(booking.getTour().getName())
+//                                        .tourImage(booking.getTour().getTourImages().get(0).getImageUrl())
+//                                        .bookingStatus(booking.getStatus())
+//                                        .bookingTotalAmount(booking.getTotalAmount())
+//                                        .bookingExpiredAt(booking.getExpiredAt())
+//                                        .build();
+//                            }
+//
+//                    )
+//                    .collect(Collectors.toList());
+//
+//            return buildPagedResponse(tourPage, resultDTO);
+//        } catch (Exception ex) {
+//            throw BusinessException.of(GET_BOOKING_HISTORY_LIST_FAIL, ex);
+//        }
+        return null;
     }
 
-    private Specification<TourBooking> buildSearchSpecification(String keyword, String paymentStatus) {
+    private Specification<ServiceBooking> buildSearchSpecification(String bookingCode, String paymentStatus) {
         return (root, query, cb) -> {
             query.distinct(true);
             List<Predicate> predicates = new ArrayList<>();
 
             predicates.add(cb.equal(root.get("deleted"), false));
 
-            // Search by tour name
-            // Normalize Vietnamese text for search (ignore case and accents)
-            if (keyword != null && !keyword.trim().isEmpty()) {
-                // Ensure PostgreSQL has UNACCENT enabled
-                Expression<String> normalizedTourName = cb.function("unaccent", String.class, cb.lower(root.join("tour", JoinType.LEFT).get("name")));
+            if (bookingCode != null && !bookingCode.trim().isEmpty()) {
+                Expression<String> normalizedKeyword = cb.function(
+                        "unaccent",
+                        String.class,
+                        cb.literal(bookingCode.toLowerCase())
+                );
+                Expression<String> normalizedName = cb.function(
+                        "unaccent",
+                        String.class,
+                        cb.lower(root.get("bookingCode"))
+                );
 
-                // Remove accents from the input keyword
-                Expression<String> normalizedKeyword = cb.function("unaccent", String.class, cb.literal(keyword.toLowerCase()));
-
-                Predicate tourNamePredicate = cb.like(normalizedTourName, cb.concat("%", cb.concat(normalizedKeyword, "%")));
-
-                // Combine both conditions
-                predicates.add(tourNamePredicate);
+                Predicate namePredicate = cb.like(
+                        normalizedName,
+                        cb.concat("%", cb.concat(normalizedKeyword, "%"))
+                );
+                predicates.add(namePredicate);
             }
+
+//            if (bookingCode != null && !bookingCode.trim().isEmpty()) {
+//                predicates.add(cb.equal(root.get("bookingCode"), bookingCode.trim()));
+//            }
+
 
 
             // Filter by status
-            if (paymentStatus != null) {
-                predicates.add(cb.equal(root.get("status"), paymentStatus));
+            if (paymentStatus != null && !paymentStatus.trim().isEmpty()) {
+                predicates.add(cb.equal(root.get("status"), BookingStatus.valueOf(paymentStatus.trim())));
             }
+
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
 
-    private <T> GeneralResponse<PagingDTO<List<T>>> buildPagedResponse(Page<TourBooking> tourPage, List<T> tours) {
+    private <T, U> GeneralResponse<PagingDTO<List<T>>> buildPagedResponse(Page<U> page, List<T> items) {
         PagingDTO<List<T>> pagingDTO = PagingDTO.<List<T>>builder()
-                .page(tourPage.getNumber())
-                .size(tourPage.getSize())
-                .total(tourPage.getTotalElements())
-                .items(tours)
+                .page(page.getNumber())
+                .size(page.getSize())
+                .total(page.getTotalElements())
+                .items(items)
                 .build();
 
         return new GeneralResponse<>(HttpStatus.OK.value(), "ok", pagingDTO);
@@ -1170,9 +1182,9 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public GeneralResponse<?> updateBookingStatus(BookingStatusUpdateDTO dto) {
         try {
-            TourBooking tourBooking = tourBookingRepository.findByBookingId(dto.getId());
-            tourBooking.setStatus(dto.getBookingStatus());
-            tourBookingRepository.save(tourBooking);
+            ServiceBooking serviceBooking = serviceBookingRepository.findByBookingId(dto.getId());
+            serviceBooking.setStatus(dto.getBookingStatus());
+            serviceBookingRepository.save(serviceBooking);
             return GeneralResponse.of(dto);
         } catch (Exception ex) {
             throw BusinessException.of(UPDATE_BOOKING_STATUS_FAIL, ex);
@@ -1507,6 +1519,60 @@ public class BookingServiceImpl implements BookingService {
             return GeneralResponse.of(bookingMapper.toTourBookingServiceDTO(updatedTourBookingService));
         } catch (Exception ex) {
             throw BusinessException.of(CANCEL_TOUR_BOOKING_SERVICES_FAIL, ex);
+        }
+    }
+
+    @Override
+    public GeneralResponse<PagingDTO<List<ServiceBookingDTO>>> getServiceBookings(int page, int size, String bookingCode, String paymentStatus) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+            Specification<ServiceBooking> spec = buildSearchSpecification(bookingCode, paymentStatus);
+
+            Page<ServiceBooking> bookingPage = serviceBookingRepository.findAll(spec, pageable);
+
+            List<ServiceBookingDTO> serviceDTOS = bookingPage.getContent().stream()
+                    .map(booking ->
+                            ServiceBookingDTO.builder()
+                                    .id(booking.getId())
+                                    .bookingCode(booking.getBookingCode())
+                                    .totalPrice(booking.getTotalPrice())
+                                    .status(booking.getStatus())
+                                    .userId(booking.getUser().getId())
+                                    .userName(booking.getUser().getFullName())
+                                    .createdAt(booking.getCreatedAt())
+                                    .build()
+
+
+                    )
+                    .collect(Collectors.toList());
+
+            return buildPagedResponse(bookingPage, serviceDTOS);
+        } catch (Exception ex) {
+            throw BusinessException.of("Tải các booking thất bại", ex);
+        }
+    }
+
+    @Override
+    public GeneralResponse<?> viewBookingDetails(Long serviceBookingId) {
+        try {
+            ServiceBooking serviceBooking = serviceBookingRepository.findById(serviceBookingId).orElseThrow();
+            Long userId = serviceBookingRepository.findUserIdByBookingCode(serviceBooking.getBookingCode());
+            List<RoomDetailResponseDTO> hotelItems = serviceBookingRepository.findHotelItemsByUserId(userId);
+            List<MealDetailResponseDTO> mealItems = serviceBookingRepository.findMealItemsByUserId(userId);
+            List<ServiceBookingDetailDTO> activityItems = serviceBookingRepository.findActivityItemsByUserId(userId);
+
+            ServiceBookingDetailResponseDTO result = ServiceBookingDetailResponseDTO.builder()
+                    .bookingCode(serviceBooking.getBookingCode())
+                    .hotelItems(hotelItems)
+                    .mealItems(mealItems)
+                    .activityItems(activityItems)
+                    .build();
+
+
+            return GeneralResponse.of(result);
+
+        } catch (Exception ex) {
+            throw BusinessException.of(GENERAL_FAIL_MESSAGE, ex);
         }
     }
 

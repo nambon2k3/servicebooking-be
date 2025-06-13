@@ -124,4 +124,8 @@ public interface BookingService {
     GeneralResponse<?> rejectRefundRequest(Long tourBookingId);
 
     GeneralResponse<?> successService(Long tourBookingServiceId);
+
+    GeneralResponse<PagingDTO<List<ServiceBookingDTO>>> getServiceBookings(int page, int size, String bookingCode, String paymentStatus);
+
+    GeneralResponse<?> viewBookingDetails(Long serviceBookingId);
 }
