@@ -2,8 +2,11 @@ package com.fpt.capstone.tourism.service.impl;
 
 import com.fpt.capstone.tourism.dto.common.*;
 import com.fpt.capstone.tourism.dto.response.*;
+import com.fpt.capstone.tourism.dto.response.provider.PublicRestaurantDetailDTO;
+import com.fpt.capstone.tourism.dto.response.service.MealResponseDTO;
 import com.fpt.capstone.tourism.exception.common.BusinessException;
 import com.fpt.capstone.tourism.mapper.*;
+import com.fpt.capstone.tourism.model.GeoPosition;
 import com.fpt.capstone.tourism.model.Location;
 import com.fpt.capstone.tourism.model.ServiceProvider;
 import com.fpt.capstone.tourism.model.Tour;
@@ -47,6 +50,7 @@ public class HomepageServiceImpl implements HomepageService {
     private final ServiceProviderRepository serviceProviderRepository;
     //private final ActivityMapper activityMapper;
     private final LocationMapper locationMapper;
+    private final GeoPositionMapper geoPositionMapper;
     private final BlogMapper blogMapper;
     private final ServiceProviderMapper serviceProviderMapper;
     private final ServiceMapper serviceMapper;
@@ -201,8 +205,29 @@ public class HomepageServiceImpl implements HomepageService {
             List<ServiceProvider> otherHotels = serviceProviderRepository
                     .findOtherHotelsInSameLocationByProviderId(serviceProviderId, serviceProvider.getLocation().getId());
 
+            Map<Long, Double> minPriceMap = serviceProviderRepository.findMinRoomPricesByHotelIds(otherHotels.stream().map(ServiceProvider::getId).toList())
+                    .stream()
+                    .collect(Collectors.toMap(
+                            row -> (Long) row[0],  // tourId
+                            row -> (Double) row[1] // priceFrom
+                    ));;
+
             List<PublicServiceProviderDTO> otherHotelsDTO = otherHotels.stream()
-                    .map(serviceProviderMapper::toPublicServiceProviderDTO).collect(Collectors.toList());
+                    .map(sp -> new PublicServiceProviderDTO(
+                            sp.getId(),
+                            sp.getImageUrl(),
+                            sp.getName(),
+                            sp.getAbbreviation(),
+                            sp.getWebsite(),
+                            sp.getEmail(),
+                            sp.getStar(),
+                            sp.getPhone(),
+                            sp.getAddress(),
+                            locationMapper.toPublicLocationDTO(sp.getLocation()),
+                            geoPositionMapper.toDTO(sp.getGeoPosition()),
+                            minPriceMap.getOrDefault(sp.getId(), 0.0)
+                    ))
+                    .toList();
             //Mapping to Dto
             PublicHotelDetailDTO publicHotelDetailDTO = PublicHotelDetailDTO.builder()
                     .serviceProvider(serviceProviderMapper.toPublicServiceProviderDTO(serviceProvider))
@@ -216,11 +241,64 @@ public class HomepageServiceImpl implements HomepageService {
     }
 
     @Override
+    public GeneralResponse<PublicRestaurantDetailDTO> viewPublicRestaurantDetail(Long serviceProviderId) {
+        try {
+            //Find service provider
+            ServiceProvider serviceProvider = serviceProviderRepository.findById(serviceProviderId).orElseThrow(
+                    () -> BusinessException.of(SERVICE_PROVIDER_NOT_FOUND)
+            );
+
+            //Find list rooms of the service provider
+            List<MealResponseDTO> rooms = serviceRepository.findMealsByProviderId(serviceProviderId);
+
+            //Find list other hotel in the same location
+            List<ServiceProvider> otherHotels = serviceProviderRepository
+                    .findOtherRestaurantsInSameLocationByProviderId(serviceProviderId, serviceProvider.getLocation().getId());
+
+            Map<Long, Double> minPriceMap = serviceProviderRepository.findMinRoomPricesByHotelIds(otherHotels.stream().map(ServiceProvider::getId).toList())
+                    .stream()
+                    .collect(Collectors.toMap(
+                            row -> (Long) row[0],  // tourId
+                            row -> (Double) row[1] // priceFrom
+                    ));;
+
+            List<PublicServiceProviderDTO> otherRestaurantDTO = otherHotels.stream()
+                    .map(sp -> new PublicServiceProviderDTO(
+                            sp.getId(),
+                            sp.getImageUrl(),
+                            sp.getName(),
+                            sp.getAbbreviation(),
+                            sp.getWebsite(),
+                            sp.getEmail(),
+                            sp.getStar(),
+                            sp.getPhone(),
+                            sp.getAddress(),
+                            locationMapper.toPublicLocationDTO(sp.getLocation()),
+                            geoPositionMapper.toDTO(sp.getGeoPosition()),
+                            minPriceMap.getOrDefault(sp.getId(), 0.0)
+                    ))
+                    .toList();
+
+//            List<PublicServiceProviderDTO> otherRestaurantDTO = otherHotels.stream()
+//                    .map(serviceProviderMapper::toPublicServiceProviderDTO).toList();
+            //Mapping to Dto
+            PublicRestaurantDetailDTO publicHotelDetailDTO = PublicRestaurantDetailDTO.builder()
+                    .serviceProvider(serviceProviderMapper.toPublicServiceProviderDTO(serviceProvider))
+                    .meals(rooms)
+                    .otherRestaurants(otherRestaurantDTO)
+                    .build();
+            return new GeneralResponse<>(HttpStatus.OK.value(), HOTEL_DETAIL_LOAD_SUCCESS, publicHotelDetailDTO);
+        } catch (Exception ex){
+            throw BusinessException.of(HOTEL_DETAIL_LOAD_FAIL, ex);
+        }
+    }
+
+    @Override
     public GeneralResponse<?> search(String keyword) {
         try {
             String normalizedName = removeAccents(keyword.toLowerCase());
             List<Tour> tours = tourRepository.findAllPublicTour().stream()
-                    .filter(t -> removeAccents(t.getName().toLowerCase()).contains(normalizedName)).collect(Collectors.toList());
+                    .filter(t -> removeAccents(t.getName().toLowerCase()).contains(normalizedName)).toList();
 
             List<TourSearchDTO> results = tours.stream().map(tour -> {
                 return TourSearchDTO.builder()

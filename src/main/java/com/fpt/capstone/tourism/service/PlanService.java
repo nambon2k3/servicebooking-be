@@ -6,6 +6,7 @@ import com.fpt.capstone.tourism.dto.common.TourBookingWithDetailDTO;
 import com.fpt.capstone.tourism.dto.request.ActivityGenerateDTO;
 import com.fpt.capstone.tourism.dto.request.GeneratePlanRequestDTO;
 import com.fpt.capstone.tourism.dto.request.SavePlanRequestDTO;
+import com.fpt.capstone.tourism.dto.request.review.ReviewRequestDTO;
 import com.fpt.capstone.tourism.dto.response.PagingDTO;
 import com.fpt.capstone.tourism.dto.response.PlanSaleResponseDTO;
 import com.fpt.capstone.tourism.model.enums.PlanStatus;
@@ -35,6 +36,8 @@ public interface PlanService {
 
     GeneralResponse<PagingDTO<List<PlanDTO>>> getPlans(int page, int size, String sortField, String sortDirection, Long userId);
 
+    GeneralResponse<PagingDTO<List<PlanDTO>>> getPlans(int page, int size, String sortField, String sortDirection);
+
     GeneralResponse<PagingDTO<List<PlanSaleResponseDTO>>> getPlans(int page, int size, String sortField, String sortDirection, PlanStatus planStatus, String keyword);
 
     GeneralResponse<?> updatePlan(String planJson, Long planId);
@@ -51,4 +54,8 @@ public interface PlanService {
 
 
     GeneralResponse<?> savePlan(SavePlanRequestDTO planDTO);
+
+    GeneralResponse<?> getPlanReviews(Long planId);
+
+    GeneralResponse<?> createReview(Long planId, ReviewRequestDTO dto);
 }

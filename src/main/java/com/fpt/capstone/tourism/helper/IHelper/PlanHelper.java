@@ -17,6 +17,8 @@ public interface PlanHelper {
 
     Specification<Plan> buildSearchSpecification(Long userId);
 
+    Specification<Plan> buildSearchSpecification(boolean open);
+
     Specification<Plan> buildSearchSpecification(PlanStatus planStatus, String keyword);
 
     GeneralResponse<PagingDTO<List<PlanDTO>>> buildPagedResponse(Page<Plan> planPage);

@@ -129,6 +129,18 @@ public interface ServiceProviderRepository extends JpaRepository<ServiceProvider
     List<ServiceProvider> findOtherHotelsInSameLocationByProviderId(Long serviceProviderId, Long locationId);
 
 
+    @Query("""
+            SELECT sp FROM ServiceProvider sp
+            JOIN sp.serviceCategories sc
+            WHERE sp.location.id = :locationId
+            AND sp.id!= :serviceProviderId
+            AND sp.deleted = false
+            AND sc.id = 2
+            ORDER BY RANDOM() LIMIT 6
+""")
+    List<ServiceProvider> findOtherRestaurantsInSameLocationByProviderId(Long serviceProviderId, Long locationId);
+
+
 
     @Query("SELECT DISTINCT s.serviceProvider FROM TourBookingService tbs " +
             "JOIN tbs.service s " +
