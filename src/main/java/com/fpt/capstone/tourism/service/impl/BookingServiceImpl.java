@@ -1557,9 +1557,9 @@ public class BookingServiceImpl implements BookingService {
         try {
             ServiceBooking serviceBooking = serviceBookingRepository.findById(serviceBookingId).orElseThrow();
             Long userId = serviceBookingRepository.findUserIdByBookingCode(serviceBooking.getBookingCode());
-            List<RoomDetailResponseDTO> hotelItems = serviceBookingRepository.findHotelItemsByUserId(userId);
-            List<MealDetailResponseDTO> mealItems = serviceBookingRepository.findMealItemsByUserId(userId);
-            List<ServiceBookingDetailDTO> activityItems = serviceBookingRepository.findActivityItemsByUserId(userId);
+            List<RoomDetailResponseDTO> hotelItems = serviceBookingRepository.findHotelItemsByBookingId(serviceBookingId);
+            List<MealDetailResponseDTO> mealItems = serviceBookingRepository.findMealItemsByBookingId(serviceBookingId);
+            List<ServiceBookingDetailDTO> activityItems = serviceBookingRepository.findActivityItemsByBookingId(serviceBookingId);
 
             ServiceBookingDetailResponseDTO result = ServiceBookingDetailResponseDTO.builder()
                     .bookingCode(serviceBooking.getBookingCode())

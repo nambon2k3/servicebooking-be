@@ -1,15 +1,18 @@
 package com.fpt.capstone.tourism.repository;
 
 import com.fpt.capstone.tourism.dto.common.MealDetailResponseDTO;
+import com.fpt.capstone.tourism.dto.common.RevenueChartDTO;
 import com.fpt.capstone.tourism.dto.common.RoomDetailResponseDTO;
 import com.fpt.capstone.tourism.dto.common.ServiceBookingDetailDTO;
 import com.fpt.capstone.tourism.model.ServiceBooking;
 import com.fpt.capstone.tourism.model.User;
+import com.fpt.capstone.tourism.model.enums.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -37,9 +40,9 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
     FROM ServiceBookingDetail svd
     JOIN Service s ON svd.service.id = s.id
     JOIN Room r ON r.service.id = s.id
-    WHERE svd.bookingService.user.id = :id AND s.serviceCategory.id = 1
+    WHERE svd.bookingService.id = :id AND s.serviceCategory.id = 1
 """)
-    List<RoomDetailResponseDTO> findHotelItemsByUserId(Long id);
+    List<RoomDetailResponseDTO> findHotelItemsByBookingId(Long id);
 
     @Query("""
     SELECT new com.fpt.capstone.tourism.dto.common.MealDetailResponseDTO(
@@ -51,9 +54,9 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
     FROM ServiceBookingDetail svd
     JOIN Service s ON svd.service.id = s.id
     JOIN Meal m ON s.id = m.service.id
-    WHERE svd.bookingService.user.id = :id AND s.serviceCategory.id = 2
+    WHERE svd.bookingService.id = :id AND s.serviceCategory.id = 2
 """)
-    List<MealDetailResponseDTO> findMealItemsByUserId(Long id);
+    List<MealDetailResponseDTO> findMealItemsByBookingId(Long id);
 
     @Query("""
                 SELECT new com.fpt.capstone.tourism.dto.common.ServiceBookingDetailDTO(
@@ -63,9 +66,9 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
                 )
                 FROM ServiceBookingDetail svd
             JOIN Service s ON svd.service.id = s.id
-                WHERE svd.bookingService.user.id = :id AND s.serviceCategory.id = 4
+                WHERE svd.bookingService.id = :id AND s.serviceCategory.id = 4
             """)
-    List<ServiceBookingDetailDTO> findActivityItemsByUserId(Long id);
+    List<ServiceBookingDetailDTO> findActivityItemsByBookingId(Long id);
 
     @Query(value = "select * from service_booking where id = ?1", nativeQuery = true)
     ServiceBooking findByBookingId(Long id);
