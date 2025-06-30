@@ -24,6 +24,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -684,6 +685,9 @@ public class TourServiceImpl implements TourService {
         }
     }
 
+    private final ServiceBookingRepository serviceBookingRepository;
+    private final PlanRepository planRepository;
+
     @Override
     public GeneralResponse<?> viewDashboard(LocalDate fromDate, LocalDate toDate) {
         try {
@@ -718,15 +722,36 @@ public class TourServiceImpl implements TourService {
             //Tính số lượng tài khoản mới từng tháng (12 tháng gần nhất)
             List<NewUsersChartDTO> monthlyNewUsers = userRepository.getNewUserByMonth(startDate, endDate);
 
+
+            TourTypeRatioDTO dto = TourTypeRatioDTO.builder()
+                    .month(startDate.getMonthValue())
+                    .year(startDate.getYear())
+                    .privateRatio(planRepository.countDistinctByPlanStatus(PlanStatus.CREATED))
+                    .sicRatio(planRepository.countDistinctByPlanStatus(PlanStatus.SUCCESS))
+                    .build();
+
+
+
             //Tính tỉ lệ tour SIC với Private từng tháng (12 tháng gần nhất)
-            List<TourTypeRatioDTO> tourTypeRatios = tourBookingRepository.getTourTypeRatioByMonth(
-                    startDate,
-                    endDate,
-                    TourBookingStatus.SUCCESS);
+            List<TourTypeRatioDTO> tourTypeRatios = new ArrayList<>();
+            tourTypeRatios.add(dto);
 
             //Tìm danh sách booking gần đây
             Pageable pageable = PageRequest.of(0, 10);
-            List<RecentBookingDTO> recentBookings = tourBookingRepository.getRecentBooking(startDate, endDate, pageable);
+            List<RecentBookingDTO> recentBookings = new ArrayList<>(); //tourBookingRepository.getRecentBooking(startDate, endDate, pageable);
+
+            List<ServiceBooking> serviceBookings = serviceBookingRepository.findAll();
+
+            for(ServiceBooking serviceBooking : serviceBookings) {
+                RecentBookingDTO recentBookingDTO = new RecentBookingDTO();
+                recentBookingDTO.setBookingId(serviceBooking.getId());
+                recentBookingDTO.setTourName(serviceBooking.getBookingCode());
+                recentBookingDTO.setTotalAmount(BigDecimal.valueOf(serviceBooking.getTotalPrice()));
+                recentBookingDTO.setCustomerName(serviceBooking.getUser().getFullName());
+                recentBookingDTO.setBookingDate(serviceBooking.getCreatedAt());
+                recentBookings.add(recentBookingDTO);
+            }
+
 
             //Tìm top tour có doanh thu cao nhất (12 tháng gần nhất)
             pageable = PageRequest.of(0, 20);

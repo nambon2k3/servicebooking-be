@@ -9,15 +9,9 @@ import com.fpt.capstone.tourism.dto.response.service.ActivityResponseDTO;
 import com.fpt.capstone.tourism.dto.response.service.MealResponseDTO;
 import com.fpt.capstone.tourism.exception.common.BusinessException;
 import com.fpt.capstone.tourism.helper.IHelper.BookingHelper;
-import com.fpt.capstone.tourism.model.CartItem;
-import com.fpt.capstone.tourism.model.ServiceBooking;
-import com.fpt.capstone.tourism.model.ServiceBookingDetail;
-import com.fpt.capstone.tourism.model.User;
-import com.fpt.capstone.tourism.model.enums.BookingStatus;
-import com.fpt.capstone.tourism.repository.CartItemRepository;
-import com.fpt.capstone.tourism.repository.ServiceBookingDetailRepository;
-import com.fpt.capstone.tourism.repository.ServiceBookingRepository;
-import com.fpt.capstone.tourism.repository.ServiceRepository;
+import com.fpt.capstone.tourism.model.*;
+import com.fpt.capstone.tourism.model.enums.*;
+import com.fpt.capstone.tourism.repository.*;
 import com.fpt.capstone.tourism.service.ServiceBookingService;
 import com.fpt.capstone.tourism.service.VNPayService;
 import jakarta.transaction.Transactional;
@@ -37,6 +31,8 @@ public class ServiceBookingServiceImpl implements ServiceBookingService {
     private final ServiceBookingRepository serviceBookingRepository;
     private final ServiceBookingDetailRepository serviceBookingDetailRepository;
     private final ServiceRepository serviceRepository;
+    private final TransactionRepository transactionRepository;
+    private final CostAccountRepository costAccountRepository;
 
     private final BookingHelper bookingHelper;
     private final VNPayService vnPayService;
@@ -66,6 +62,32 @@ public class ServiceBookingServiceImpl implements ServiceBookingService {
                     .bookingCode(bookingCode)
                     .paymentUrl(paymentUrl)
                     .build();
+
+            // Create a cost account for the booking
+            Transaction transaction = Transaction.builder()
+                    .amount(dto.getTotal())
+                    .paymentMethod(PaymentMethod.BANKING)
+                    .notes("none")
+                    .receivedBy("System")
+                    .paidBy("User")
+                    .booking(TourBooking.builder().id(7L).build())
+                    .transactionStatus(TransactionStatus.PAID)
+                    .category(TransactionType.RECEIPT)
+                    .build();
+
+            Transaction savedTransaction = transactionRepository.save(transaction);
+
+            CostAccount costAccount = CostAccount.builder()
+                    .transaction(savedTransaction)
+                    .status(CostAccountStatus.PAID)
+                    .amount(dto.getTotal())
+                    .quantity(1)
+                    .finalAmount(dto.getTotal())
+                    .discount(0)
+                    .content("Service Booking Payment")
+                    .build();
+
+            costAccountRepository.save(costAccount);
 
             ServiceBooking savedServiceBooking = serviceBookingRepository.save(serviceBooking);
 

@@ -39,10 +39,10 @@ public class EmailConfirmationServiceImpl implements EmailConfirmationService {
             //Token encryptor when need
             //String encryptedToken = TokenEncryptorImpl.encrypt(token.getToken());
 
-            String link = "https://traveltoday.cloud/confirm-email?token=" + token.getToken();
-            String subject = "Xác Nhận Email Viet Travel";
+            String link = "http://54.252.163.48/confirm-email?token=" + token.getToken();
+            String subject = "Xác Nhận Email Soloist";
             String content = "Kính gửi " + user.getFullName() + ",\n\n"
-                    + "Chào mừng bạn đến với Viet Travel! Chúng tôi rất vui mừng khi bạn tham gia cộng đồng của chúng tôi."
+                    + "Chào mừng bạn đến với Soloist! Chúng tôi rất vui mừng khi bạn tham gia cộng đồng của chúng tôi."
                     + "\nChúng tôi hy vọng bạn sẽ có nhiều trải nghiệm thú vị khi khám phá Việt Nam cùng chúng tôi.\n\n"
                     + "Để xác nhận địa chỉ email của bạn, vui lòng nhấp vào liên kết dưới đây:\n" + link;
 
@@ -59,8 +59,8 @@ public class EmailConfirmationServiceImpl implements EmailConfirmationService {
     @Override
     public void sendForgotPasswordEmail(User user, Token token) {
         try {
-            String link = "https://traveltoday.cloud/api/v1/reset-password?token=" + token.getToken();
-            String subject = "Đặt Lại Mật Khẩu";
+            String link = "http://54.252.163.48/v1/reset-password?token=" + token.getToken();
+            String subject = "Đặt Lại Mật Khẩu Soloist";
             String content = "Kính gửi " + user.getFullName() + ",\n\n"
                     + "Xin chào,"
                     + "\nBạn đã yêu cầu đặt lại mật khẩu của mình.\n\n"
