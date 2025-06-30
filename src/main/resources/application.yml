@@ -92,7 +92,7 @@ logging:
       hibernate:
         SQL: INFO
 frontend:
-  base-url: http://54.252.163.48:4200
+  base-url: http://54.252.163.48
 backend:
   base-url: http://54.252.163.48:8080/v1
 
