@@ -125,7 +125,7 @@ public class AuthServiceImpl implements AuthService {
                     .phone(registerRequestDTO.getPhone())
                     .address(registerRequestDTO.getAddress())
                     .deleted(false)
-                    .emailConfirmed(false)
+                    .emailConfirmed(true)
                     .build();
 
             User savedUser = userService.saveUser(user);
@@ -139,13 +139,13 @@ public class AuthServiceImpl implements AuthService {
 
             userRoleRepository.save(newUserRole);
 
-            // Send email confirmation
-            Token token = emailConfirmationService.createEmailConfirmationToken(savedUser);
-            try {
-                emailConfirmationService.sendConfirmationEmail(savedUser, token);
-            } catch (Exception e) {
-                throw BusinessException.of(REGISTER_FAIL_MESSAGE);
-            }
+//            // Send email confirmation
+//            Token token = emailConfirmationService.createEmailConfirmationToken(savedUser);
+//            try {
+//                emailConfirmationService.sendConfirmationEmail(savedUser, token);
+//            } catch (Exception e) {
+//                throw BusinessException.of(REGISTER_FAIL_MESSAGE);
+//            }
 
             UserInfoResponseDTO userResponseDTO = UserInfoResponseDTO.builder()
                     .id(savedUser.getId())
